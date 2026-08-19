@@ -124,7 +124,7 @@ vim /etc/logrotate.d/custom_log
 }
 ```
 
-配置文件同时保存在 GitHub 仓库中：[custom_log 配置文件](./scripts/custom_log)
+配置文件同时保存在 GitHub 仓库中：[custom_log 配置文件](../scripts/custom_log)
 
 ### ③ 准备测试日志
 
