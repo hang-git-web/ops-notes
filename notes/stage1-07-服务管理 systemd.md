@@ -206,3 +206,7 @@ journalctl -u cron -p err                     # 只看错误级别以上
 - 能看懂 status 输出里 Active 和 Loaded 两行
 - 用 journalctl 看过服务日志（能找到自己的 SSH 登录记录）
 - 能讲清 reload vs restart、journalctl vs tail 两组对比
+
+
+
+

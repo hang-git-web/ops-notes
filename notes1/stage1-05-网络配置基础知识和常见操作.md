@@ -147,3 +147,158 @@ www.baidu.com → 103.235.46.102
 **第六步：你看到结果**
 
 浏览器显示网页，或者 `ping` 打出 `64 bytes from 103.235.46.102`。
+
+
+# 06 - Ubuntu 静态 IP 配置（VMware 虚拟机）
+
+**日期**：2026-08-20
+
+---
+
+## 目标
+为 VMware 中的 Ubuntu Server 22.04 虚拟机配置静态 IP，保证 NFS 项目中的 163（服务端）和 164（客户端）IP 固定不变，避免 DHCP 重启后地址漂移。
+
+**为什么需要静态 IP？**
+- NFS 的访问控制（`/etc/exports`）和客户端挂载（`/etc/fstab`）都依赖 IP/主机名。
+- DHCP 分配的地址重启后会变，一变所有挂载全部失效。
+- 生产环境中存储服务器 IP 还会被写进 DNS、监控、备份白名单，从来都是静态。
+
+---
+
+## 前置检查
+
+登录虚拟机后，先确认三件事：
+
+```bash
+ip addr                     # 当前 IP 和网卡名（如 ens33）
+ip route | grep default     # 默认网关（本次实验为 192.168.232.2）
+ls /etc/netplan/            # netplan 配置文件（本次为 50-cloud-init.yaml）
+```
+
+> ⚠️ 注意：Ubuntu 不用 CentOS 的 `/etc/sysconfig/network-scripts/ifcfg-ens33`，网络配置在 `/etc/netplan/` 下，且文件名可能不是 `00-installer-config.yaml`，以 `ls` 实际看到为准（本次是 `50-cloud-init.yaml`）。
+
+---
+
+## 操作步骤
+
+### 1. 禁用 cloud-init 网络接管
+
+`50-cloud-init.yaml` 是 cloud-init 自动生成的，直接改的话**重启后会被还原**。先关掉 cloud-init 的网络配置：
+
+```bash
+echo 'network: {config: disabled}' | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+```
+
+验证：
+
+```bash
+cat /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+```
+
+### 2. 备份原配置
+
+```bash
+sudo cp /etc/netplan/50-cloud-init.yaml /etc/netplan/50-cloud-init.yaml.bak
+```
+
+`.bak` 结尾不会被 netplan 加载，放在同目录安全。
+
+### 3. 写入静态 IP 配置
+
+163（服务端）示例：
+
+```bash
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null <<'EOF'
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses:
+        - 192.168.232.130/24
+      routes:
+        - to: default
+          via: 192.168.232.2
+      nameservers:
+        addresses: [192.168.232.2, 114.114.114.114]
+EOF
+```
+
+164（客户端）只需把 IP 换成 `.131`：
+
+```bash
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null <<'EOF'
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses:
+        - 192.168.232.131/24
+      routes:
+        - to: default
+          via: 192.168.232.2
+      nameservers:
+        addresses: [192.168.232.2, 114.114.114.114]
+EOF
+```
+
+> 网关 `via:` 必须填第 1 步 `ip route` 里看到的实际地址，不要照抄。
+> `tee` 整段在命令行提示符下粘贴，不要在编辑器里粘，否则 `EOF` 会被写进文件。
+
+### 4. 应用配置
+
+```bash
+sudo netplan apply
+```
+
+如果出现 `WARNING:root:Cannot call Open vSwitch`，忽略即可，只是提示系统没装 OVS，不影响配置。
+
+### 5. 验证
+
+```bash
+ip addr show ens33
+ping -c 3 192.168.232.2     # 网关
+ping -c 3 baidu.com         # 外网
+```
+
+预期：ens33 显示 `inet 192.168.232.130/24` 且**没有 `dynamic` 字样**。
+
+> ⚠️ `netplan apply` 后 Xshell 会断线（IP 变了），用新 IP 重新连接即可。
+
+---
+
+## 验证结果
+
+- [x] 163 ens33 静态 IP `192.168.232.130/24`，无 `dynamic`
+- [x] 164 ens33 静态 IP `192.168.232.131/24`，无 `dynamic`
+- [x] 网关 `192.168.232.2` 可 ping 通
+- [x] 外网可访问（`ping baidu.com` 正常）
+- [x] 163 与 164 互通（`ping 192.168.232.163`）
+- [x] 重启后 IP 不变（cloud-init 已禁用）
+
+---
+
+## 关键知识点
+
+- **CentOS vs Ubuntu 网卡配置**：CentOS 用 `ifcfg-ens33`（`BOOTPROTO=dhcp/static`），Ubuntu 用 netplan YAML（`dhcp4: true/false`），意思相同、语法不同。
+- **cloud-init 会覆盖手动修改**：必须写 `99-disable-network-config.cfg` 关掉接管，否则重启还原 DHCP。
+- **静态 IP 必须和网关同网段**：直接改成别的网段（如 `172.25.250.x`）会导致宿主机连不上、外网也断；要换网段得在 VMware 里加"仅主机模式"网卡单独承载。
+- **netplan 可多文件合并**：`/etc/netplan/*.yaml` 都会生效，备份用 `.bak` 后缀避免被加载。
+- **heredoc 写法**：`tee 文件 <<'EOF' ... EOF` 是把整段内容写进文件的一行式写法，适合避免在 nano/vim 里手滑。
+
+---
+
+## 常见坑与排错
+
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| `No such file or directory` 找不到 `ifcfg-ens33` | Ubuntu 不用 CentOS 路径 | 用 `/etc/netplan/` 下的文件 |
+| 文件是 `50-cloud-init.yaml` 不是 `00-installer-config.yaml` | Ubuntu Server 用 cloud-init 生成 | 以 `ls /etc/netplan/` 实际为准 |
+| 改完重启 IP 又变回 DHCP | cloud-init 重新生成配置 | 先执行第 1 步禁用 cloud-init |
+| `netplan apply` 后 Xshell 断线 | IP 变了 | 用新 IP 重连 |
+| 文件末尾混进 `EOF` 行 | 把 tee 命令粘贴进了编辑器 | `sudo sed -i '$d' 文件` 删末行，或重新整段写入 |
+| `Cannot call Open vSwitch` 警告 | 系统未装 OVS | 忽略，不影响配置 |
+| 改成 `172.25.250.x` 后连不上 | 跨网段、无路由 | 留在当前网段，或加仅主机网卡 |
+
+
