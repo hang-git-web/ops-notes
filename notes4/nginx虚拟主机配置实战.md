@@ -94,7 +94,7 @@ server {
 }
 ```
 
-### 3. 修改本地 hosts 文件（测试用）
+### 3. 修改本地 hosts 文件（测试用，不用DNS解析域名）
 
 ```bash
 echo "127.0.0.1 www.site1.com" >> /etc/hosts
