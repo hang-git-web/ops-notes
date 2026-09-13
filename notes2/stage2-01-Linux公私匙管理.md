@@ -53,11 +53,12 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub 用户名@服务器IP
 示例：
 
 ```bash
-ssh-copy-id -i ~/.ssh/id_ed25519.pub root@192.168.232.131
+ssh-copy-id -i ~/.ssh/id_ed25519.pub root@192.168.232.131    
 ```
 
 - 首次会要求输入一次密码（用于把公钥装到服务器上）
 - 装好后，以后 `ssh root@192.168.232.131` 直接登录，**不再问密码**
+- 首次是一次性ssh加密通道传输公钥，以后才是公私钥认证，免密登录
 
 没有 ssh-copy-id 时手动装：
 
