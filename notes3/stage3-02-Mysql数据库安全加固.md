@@ -222,3 +222,5 @@ netstat -tulnp | grep mysql
 
 
 /etc/my.cnf配置如图1.png所示
+
+
