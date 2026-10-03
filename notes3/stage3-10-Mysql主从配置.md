@@ -45,8 +45,8 @@
 
 | 角色 | 示例 IP | MySQL 版本 | 操作系统 |
 | --- | --- | --- | --- |
-| 主库 | 172.22.4.3 | 8.0 | CentOS 7.9 |
-| 从库 | 172.22.4.4 | 8.0 | CentOS 7.9 |
+| 主库 | 192.168.171.148（node2） | 8.4 | Rocky 8.10 |
+| 从库 | 192.168.171.146（node3） | 8.4 | Rocky 8.10 |
 
 要求:
 
@@ -81,8 +81,8 @@ systemctl restart mysqld
 ### 2. 创建同步专用账号
 
 ```sql
-CREATE USER 'repl'@'172.22.4.4' IDENTIFIED BY 'Repl@2026';
-GRANT REPLICATION SLAVE ON *.* TO 'repl'@'172.22.4.4';
+CREATE USER 'repl'@'192.168.171.146' IDENTIFIED BY 'Repl@2026';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'192.168.171.146';
 FLUSH PRIVILEGES;
 
 -- 查看账号
@@ -152,7 +152,7 @@ systemctl restart mysqld
 
 ```sql
 CHANGE REPLICATION SOURCE TO
-  SOURCE_HOST        = '172.22.4.3',
+  SOURCE_HOST        = '192.168.171.148',
   SOURCE_USER        = 'repl',
   SOURCE_PASSWORD    = 'Repl@2026',
   SOURCE_PORT        = 3306,
@@ -168,7 +168,7 @@ START REPLICA;
 
 ```sql
 CHANGE MASTER TO
-  MASTER_HOST        = '172.22.4.3',
+  MASTER_HOST        = '192.168.171.148',
   MASTER_USER        = 'repl',
   MASTER_PASSWORD    = 'Repl@2025',
   MASTER_LOG_FILE    = 'mysql-bin.000001',
@@ -190,7 +190,7 @@ enforce_gtid_consistency = ON
 
 ```sql
 CHANGE REPLICATION SOURCE TO
-  SOURCE_HOST='172.22.4.3',
+  SOURCE_HOST='192.168.171.148',
   SOURCE_USER='repl',
   SOURCE_PASSWORD='Repl@2025',
   SOURCE_AUTO_POSITION = 1;

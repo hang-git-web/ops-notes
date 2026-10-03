@@ -13,7 +13,7 @@ Redis Cluster集群部署准备环境
 需要三台centos服务器,每台服务器上启动两个Redis实例，端口分别为7000和7001
 一 . 所有节点执行：安装依赖和配置redis
 1.安装依赖
-yum install -y gcc tcl wget
+dnf install -y gcc make tcl wget
 
 2. 安装并配置Redis(所有节点)
 # 下载源码包
@@ -23,7 +23,7 @@ tar -zxvf /opt/redis-7.2.0.tar.gz
 cd /data/redis/redis-7.2.0
 make && make install
 
-# 创建集群配置文件目录（以172.22.4.2为例）
+# 创建集群配置文件目录（以192.168.171.147为例）
 mkdir -p /usr/local/redis-cluster/{7000,7001}  
 cp /data/redis/redis-7.2.0/redis.conf /usr/local/redis-cluster/7000/  
 cp /data/redis/redis-7.2.0/redis.conf /usr/local/redis-cluster/7001/
@@ -50,27 +50,27 @@ redis-server  /usr/local/redis-cluster/7001/redis.conf
 
 二. 创建集群并验证
 1.使用redis-cli创建集群
-/usr/local/bin/redis-cli --cluster create 172.22.4.2:7000 172.22.4.2:7001 172.22.4.3:7000 172.22.4.3:7001 172.22.4.4:7000 172.22.4.4:7001 --cluster-replicas 1
+/usr/local/bin/redis-cli --cluster create 192.168.171.147:7000 192.168.171.147:7001 192.168.171.148:7000 192.168.171.148:7001 192.168.171.146:7000 192.168.171.146:7001 --cluster-replicas 1
 # 每个主节点带1个从节点（提示输入yes确认槽分配）
 
 2. 验证集群状态
 # 连接任意节点查看集群信息
-/usr/local/bin/redis-cli -h 172.22.4.2 -p 7000 cluster info
+/usr/local/bin/redis-cli -h 192.168.171.147 -p 7000 cluster info
 
 # 查看节点角色
-/usr/local/bin/redis-cli -h 172.22.4.2 -p 7000 cluster nodes
+/usr/local/bin/redis-cli -h 192.168.171.147 -p 7000 cluster nodes
 
 # 写入数据，观察自动重定向
-/usr/local/bin/redis-cli -c -h 172.22.4.2 -p 7000 set user:1 "Alice"  
-/usr/local/bin/redis-cli -c -h 172.22.4.2 -p 7000 get user:1  
+/usr/local/bin/redis-cli -c -h 192.168.171.147 -p 7000 set user:1 "Alice"  
+/usr/local/bin/redis-cli -c -h 192.168.171.147 -p 7000 get user:1  
 如果返回MOVED错误，说明数据被分配到其他节点，试试用-c参数启动客户端！
 
 3. 模拟主节点故障
-# 关闭一个主节点（如172.22.4.2:7000）
-/usr/local/bin/redis-cli -h 172.22.4.2 -p 7000 shutdown
+# 关闭一个主节点（如192.168.171.147:7000）
+/usr/local/bin/redis-cli -h 192.168.171.147 -p 7000 shutdown
 
 # 观察从节点是否自动升级为主节点
-/usr/local/bin/redis-cli -h 172.22.4.2 -p 7001 cluster nodes
+/usr/local/bin/redis-cli -h 192.168.171.147 -p 7001 cluster nodes
 
 三. redis集群常用命令
 # 查看集群槽分配

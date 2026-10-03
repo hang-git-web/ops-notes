@@ -4,10 +4,10 @@ Redis哨兵模式
 故障转移（Failover）‌：主节点故障时，哨兵自动提升从节点为新主节点。‌
 
 部署哨兵模式
-一. 三台centos7服务器 ip为 172.22.4.2、172.22.4.3、172.22.4.4
+一. 三台 Rocky 8.10 服务器：node1 = 192.168.171.147、node2 = 192.168.171.148（Redis 主节点）、node3 = 192.168.171.146
 所有节点执行:
 安装依赖  
-yum install -y gcc tcl wget
+dnf install -y gcc make tcl wget
 
 二. 部署redis与主从配置
 1. 安装Redis（所有节点）
@@ -19,7 +19,7 @@ cd /opt/redis-7.2.0 && make && make install
 mkdir -p /usr/local/redis/{conf,data,log}  
 cp /opt/redis-7.2.0/redis.conf /usr/local/redis/conf/
 
-2. 配置主节点（以172.22.4.2为例）
+2. 配置主节点（node2：192.168.171.148）
    vim /usr/local/redis/conf/redis.conf
 
 bind 0.0.0.0  
@@ -31,12 +31,12 @@ requirepass your_password  # 设置密码，主从需一致！
 # 启动主节点
 redis-server /usr/local/redis/conf/redis.conf
 
-步骤3：配置从节点（172.22.4.3和172.22.4.4）
+步骤3：配置从节点（node1：192.168.171.147、node3：192.168.171.146）
 
-# 修改配置文件（以172.22.4.3为例）
+# 修改配置文件（以 node1：192.168.171.147 为例）
 vim /usr/local/redis/conf/redis.conf
 
-replicaof 172.22.4.2 6379  # 指向主节点IP和端口    
+replicaof 192.168.171.148 6379  # 指向主节点IP和端口    
 masterauth your_password  # 主节点密码
 
 # 启动从节点
@@ -51,7 +51,7 @@ redis-server /usr/local/redis/conf/redis.conf
 port 26379  
 daemonize yes  
 logfile "/usr/local/redis/log/sentinel.log"  
-sentinel monitor mymaster 172.22.4.2 6379 2  # 监控主节点，2为quorum值‌
+sentinel monitor mymaster 192.168.171.148 6379 2  # 监控主节点，2为quorum值‌
 sentinel auth-pass mymaster your_password  
 sentinel down-after-milliseconds mymaster 5000  # 5秒无响应判定为故障  
 sentinel failover-timeout mymaster 10000  # 故障转移超时时间
@@ -68,10 +68,10 @@ logfile "/var/log/redis/sentinel.log"
 
 # 监控主节点
 # mymaster 是主节点的别名
-# 172.22.4.3 是主节点的 IP 地址
+# 192.168.171.148 是主节点（node2）的 IP 地址
 # 6379 是主节点的端口
 # 1 是判定主节点客观下线所需的最少哨兵数量（quorum）
-sentinel monitor mymaster 172.22.4.3 6379 1
+sentinel monitor mymaster 192.168.171.148 6379 2
 
 # 如果主节点设置了密码，需要配置认证密码
 sentinel auth-pass mymaster your_password
@@ -92,7 +92,7 @@ redis-cli -p 26379 info sentinel  查看状态
 
 3. 模拟主节点宕机
 # 在主节点执行
-redis-cli -h 172.22.4.2 shutdown  
+redis-cli -h 192.168.171.148 shutdown  
 观察哨兵日志‌：
 tail -f /usr/local/redis/log/sentinel.log  # 查看选举新主过程‌
 
@@ -104,7 +104,7 @@ redis-cli -p 26379 sentinel get-master-addr-by-name mymaster  # 查看新主IP�
 redis-cli -h <IP> info replication
 
 # 动态修改从节点指向
-redis-cli -h 172.22.4.3 SLAVEOF NO ONE  # 脱离主从‌
+redis-cli -h 192.168.171.147 SLAVEOF NO ONE  # 脱离主从‌
 
 # 查看哨兵监控状态
 redis-cli -p 26379 sentinel masters

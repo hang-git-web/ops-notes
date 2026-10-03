@@ -153,11 +153,11 @@ vim /etc/redis/redis.conf
 设置主节点：在从节点的配置文件中，添加以下配置，指定主节点的 IP 地址。
 
 ```ini
-replicaof 172.22.4.3 6379      # Redis 5.0 版本以上使用
-slaveof 172.22.4.3 6379        # Redis 5.0 版本以下使用
+replicaof 192.168.171.148 6379      # Redis 5.0 版本以上使用
+slaveof 192.168.171.148 6379        # Redis 5.0 版本以下使用
 ```
 
-其中 `172.22.4.3` 是主节点的 IP 地址，`6379` 是主节点的 Redis 端口
+其中 `192.168.171.148` 是主节点的 IP 地址，`6379` 是主节点的 Redis 端口
 
 禁用保护模式：与主节点类似，关闭保护模式，确保从节点可以接受外部连接。
 
@@ -190,7 +190,7 @@ redis-cli INFO replication
 在主节点上，执行一些写入操作，例如设置一个键值对。
 
 ```bash
-redis-cli -h 172.22.4.3 SET mykey "Hello, Redis!"
+redis-cli -h 192.168.171.148 SET mykey "Hello, Redis!"
 ```
 
 **6. 从从节点读取数据**
@@ -198,7 +198,7 @@ redis-cli -h 172.22.4.3 SET mykey "Hello, Redis!"
 然后在从节点上读取数据，验证主从复制是否成功。
 
 ```bash
-redis-cli -h 172.22.4.4 GET mykey
+redis-cli -h 192.168.171.146 GET mykey
 ```
 
 如果一切正常，返回的值应该是 `"Hello, Redis!"`

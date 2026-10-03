@@ -1,7 +1,7 @@
 # notes3 实战环境规划（复制备份 / MySQL 主从 / Redis）
 
 > **这份文档解决什么**：今天要一次做完 `notes3` 里三个模块的实战，先定清楚**要建几台虚拟机、每台装什么、按什么顺序做、哪里会踩坑**。
-> **结论：3 台 Rocky Linux 8.10**（2 核 4G / 40G），IP 沿用笔记里的 `172.22.4.2 / .3 / .4`，这样笔记里的命令基本可以原样复制。
+> **结论：3 台 Rocky Linux 8.10**（2 核 4G / 40G），IP 沿用笔记里的 `192.168.171.147 / .148 / .146`，这样笔记里的命令基本可以原样复制。
 > **本文覆盖的笔记**：
 > - 复制备份：`stage3-06`（备份与恢复）、`stage3-07`（mysqldump 详解）、`stage3-08`（XtraBackup）
 > - MySQL 主从：`stage3-09`（多实例与远程登录）、`stage3-10`（主从配置）
@@ -33,7 +33,7 @@
                              │
           ┌──────────────────┼──────────────────┐
           ▼                  ▼                  ▼
-     172.22.4.2         172.22.4.3         172.22.4.4
+     192.168.171.147     192.168.171.148    192.168.171.146
        node1              node2              node3
    ┌────────────┐    ┌────────────┐    ┌────────────┐
    │ MySQL 8.0  │    │ MySQL 8.0  │    │ MySQL 8.0  │
@@ -48,25 +48,25 @@
    └────────────┘    └────────────┘    └────────────┘
 ```
 
-| 主机名 | IP | 配置 | 承担的模块 |
-| --- | --- | --- | --- |
-| **node1** | 172.22.4.2 | 2 核 / 4G / 40G | Redis 哨兵 + Cluster（笔记 17/18 里的 `.2`）；备份模块的**异机恢复验证机** |
-| **node2** | 172.22.4.3 | 2 核 / 4G / 40G | **MySQL 主库**（10）+ 多实例 3307（09）+ **Redis master**（16/17/18） |
-| **node3** | 172.22.4.4 | 2 核 / 4G / 40G | **MySQL 从库**（10）+ **Redis slave**（16/17/18） |
+| 主机名 | IP              | 配置 | 承担的模块 |
+| --- |-----------------| --- | --- |
+| **node1** | 192.168.171.147 | 2 核 / 4G / 40G | Redis 哨兵 + Cluster（笔记 17/18 里的 `.2`）；备份模块的**异机恢复验证机** |
+| **node2** | 192.168.171.148 | 2 核 / 4G / 40G | **MySQL 主库**（10）+ 多实例 3307（09）+ **Redis master**（16/17/18） |
+| **node3** | 192.168.171.146 | 2 核 / 4G / 40G | **MySQL 从库**（10）+ **Redis slave**（16/17/18） |
 
 ### 关于笔记里 IP 的一处不一致
 
 | 笔记 | 主节点 IP |
 | --- | --- |
-| `stage3-10` MySQL 主从 | 主库 `172.22.4.3`、从库 `172.22.4.4` |
-| `stage3-16` Redis 主从 | 主节点 `172.22.4.3`、从节点 `172.22.4.4` |
-| `stage3-17` Redis 哨兵 | 主节点 `172.22.4.2`，从节点 `.3` 和 `.4` |
+| `stage3-10` MySQL 主从 | 主库 `192.168.171.148`、从库 `192.168.171.146` |
+| `stage3-16` Redis 主从 | 主节点 `192.168.171.148`、从节点 `192.168.171.146` |
+| `stage3-17` Redis 哨兵 | 主节点 `192.168.171.147`，从节点 `.148` 和 `.146` |
 | `stage3-18` Redis Cluster | 三台 `.2 / .3 / .4` |
 
 **统一口径（按上面这张表）**：
 
 - **MySQL 主库 = `.3`**、**Redis master = `.3`**（和笔记 10、16 一致）
-- 做笔记 17（哨兵）时，把 `sentinel monitor mymaster` 的目标改成 **`172.22.4.3`**（或临时让 `.2` 当 Redis 主节点）
+- 做笔记 17（哨兵）时，把 `sentinel monitor mymaster` 的目标改成 **`192.168.171.148`**（或直接用笔记 17 里写的 node1 当主节点）
 - Cluster 按笔记原样用三台 `.2 / .3 / .4`
 
 > 记住这个规律：**`.3` 是主，`.4` 是从，`.2` 只在哨兵和 Cluster 里当"第三方投票节点"**。
@@ -176,9 +176,9 @@ systemctl is-active firewalld     # 期望 inactive
 
 # 4) hosts 解析（三台都写）
 cat >>/etc/hosts<<'EOF'
-172.22.4.2 node1
-172.22.4.3 node2
-172.22.4.4 node3
+192.168.171.147 node1
+192.168.171.148 node2
+192.168.171.146 node3
 EOF
 ping -c1 node2 && ping -c1 node3  # 验证互通
 ```
@@ -280,10 +280,10 @@ mysql -uroot -p -e "SHOW REPLICA STATUS\G" | grep -E "Running|Behind|Error"
 
 ```bash
 # 16：主从
-redis-cli -h 172.22.4.3 -a 'Redis@2026' INFO replication | head -5
+redis-cli -h 192.168.171.148 -a 'Redis@2026' INFO replication | head -5
 #   期望：role:master，下面有 connected_slaves:2
 
-redis-cli -h 172.22.4.4 -a 'Redis@2026' INFO replication | head -5
+redis-cli -h 192.168.171.146 -a 'Redis@2026' INFO replication | head -5
 #   期望：role:slave，master_link_status:up
 
 # 17：哨兵
@@ -291,9 +291,9 @@ redis-cli -p 26379 sentinel masters
 redis-cli -p 26379 sentinel get-master-addr-by-name mymaster
 
 # 18：Cluster
-redis-cli -c -h 172.22.4.2 -p 7000 cluster info | grep cluster_state
+redis-cli -c -h 192.168.171.147 -p 7000 cluster info | grep cluster_state
 #   期望：cluster_state:ok
-redis-cli -c -h 172.22.4.2 -p 7000 cluster nodes | wc -l
+redis-cli -c -h 192.168.171.147 -p 7000 cluster nodes | wc -l
 #   期望：6
 ```
 
@@ -319,18 +319,18 @@ redis-cli -c -h 172.22.4.2 -p 7000 cluster nodes | wc -l
 
 ## 八、开做之前的准备
 
-### 1. 网络模式（要用 172.22.4.x，二选一）
+### 1. 网络模式（三台已在 192.168.171.x，即 VMware NAT 默认网段 —— 三者能互通、能上网的话本节可跳过）
 
 | 方案 | 做法 | 适合 |
 | --- | --- | --- |
-| **方案 A（推荐）** | 每台加两块网卡：一块 **NAT**（上网装包、下 Redis 源码），一块 **仅主机 Host-Only**，仅主机网段设成 `172.22.4.0/24` | 你 PC 上还同时跑着 Zabbix 那套（`192.168.171.x`）时，互不影响 |
-| 方案 B | 只用一块 NAT 网卡，在 VMware「虚拟网络编辑器」里把 **VMnet8 子网改成 `172.22.4.0/24`** | PC 上只有这一套实验环境 |
+| **方案 A（推荐）** | 每台加两块网卡：一块 **NAT**（上网装包、下 Redis 源码），一块 **仅主机 Host-Only**，仅主机网段设成 `192.168.171.0/24` | 你 PC 上还同时跑着 Zabbix 那套（`192.168.171.x`）时，互不影响 |
+| 方案 B | 只用一块 NAT 网卡，在 VMware「虚拟网络编辑器」里把 **VMnet8 子网改成 `192.168.171.0/24`** | PC 上只有这一套实验环境 |
 
 **验证**：
 
 ```bash
-ip -4 addr | grep 172.22.4          # 三台各有自己的 IP
-ping -c2 172.22.4.3                 # 三台互相 ping 通
+ip -4 addr | grep 192.168.171          # 三台各有自己的 IP
+ping -c2 192.168.171.148                 # 三台互相 ping 通
 ping -c2 www.baidu.com              # 能上外网（装包、下源码要用）
 ```
 
@@ -441,7 +441,7 @@ systemctl restart redis        # Rocky / CentOS
 ## 十一、开工前对照清单
 
 - [ ] 三台 Rocky 8.10 建好，2 核 4G 40G
-- [ ] 三台网卡配好（NAT + Host-Only 或改 VMnet8），IP 是 `.2 / .3 / .4`
+- [ ] 三台网卡配好（NAT + Host-Only 或改 VMnet8），IP 是 `192.168.171.147 / .148 / .146`
 - [ ] 三台互相 ping 通、都能上网
 - [ ] 三台 SELinux 关掉、firewalld 关掉
 - [ ] 三台 chronyd 正常、时间基本一致
