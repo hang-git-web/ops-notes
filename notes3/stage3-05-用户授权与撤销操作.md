@@ -29,9 +29,9 @@ CREATE USER 'admin'@'%' IDENTIFIED BY 'Admin!2025';
 **注意事项**
 
 - 密码需符合安全策略:8 位以上,含大小写字母、数字、符号
-- MySQL 8 默认认证插件是 `caching_sha2_password`;若老客户端(PHP 5.x 等)连接失败,可改为:
+- MySQL 8.4 默认认证插件是 `caching_sha2_password`；`mysql_native_password` 在 8.4 中默认不再加载（直接写会报 Plugin not loaded 错误）。只有老客户端（PHP 5.x 等）确实不支持 caching_sha2 时，才需要先在 my.cnf 加 `mysql_native_password=ON` 启用它。下面用的是 8.4 的默认插件：
   ```sql
-  CREATE USER 'dev'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P@ssw0rd!';
+  CREATE USER 'dev'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'P@ssw0rd!';
   ```
 
 ## 二、授予用户权限

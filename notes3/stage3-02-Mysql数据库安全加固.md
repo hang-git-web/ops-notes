@@ -1,9 +1,9 @@
-# MySQL 8 安全加固完整流程（CentOS 7）
+# MySQL 8.4 安全加固完整流程（Rocky 8 / EL8）
 
 ## 环境
 
-- 系统：CentOS 7
-- 数据库：MySQL 8.0.46
+- 系统：Rocky Linux 8.10
+- 数据库：MySQL 8.4（本机 8.4.11）
 - 端口计划：默认 3306 → 修改为 3307
 
 ## 前置确认：先登录
@@ -84,7 +84,7 @@ systemctl restart mysqld
 > 如果启动失败或连不上，放行端口：
 >
 > ```bash
-> yum -y install policycoreutils-python
+> yum -y install policycoreutils-python-utils
 > semanage port -a -t mysqld_port_t -p tcp 3307
 > ```
 >
@@ -147,7 +147,7 @@ server-id = 1
 
 ```bash
 systemctl restart mysqld
-tail -f /var/log/mysql-general.log
+tail -f /var/log/mysql/general.log
 ```
 
 > ⚠️ `general_log = 1` 会记录所有 SQL，**文件增长极快**——建议排查问题时开启，平时改为 `general_log = 0`。
@@ -163,7 +163,7 @@ mysql -uroot -p -P 3307
 | 匿名用户是否删除 | `SELECT user FROM mysql.user WHERE user='';` | 空结果 |
 | root 能否远程登录 | `SELECT user,host FROM mysql.user WHERE user='root' AND host='%';` | 无记录 |
 | 测试库是否存在 | `SHOW DATABASES LIKE 'test%';` | 无记录 |
-| 默认端口是否修改 | 退出后 `netstat -tulnp \| grep mysql` | 显示 3307 |
+| 默认端口是否修改 | 退出后 `ss -lntp \| grep mysql` | 显示 3307 |
 | 本地文件读取是否禁用 | `SHOW VARIABLES LIKE 'local_infile';` | local_infile = OFF |
 
 全部符合预期 = 安全配置完成 ✅
@@ -210,7 +210,7 @@ grep bind-address /etc/my.cnf    # 如果是 127.0.0.1，外部当然连不上
 semanage port -l | grep mysqld   # 看 3307 在不在列表里
 
 # ④ MySQL 是否真的在监听新端口
-netstat -tulnp | grep mysql
+ss -lntp | grep mysql
 ```
 
 ## 八、核心记忆

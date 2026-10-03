@@ -21,23 +21,23 @@
 | --- | --- | --- |
 | 5.7 | 2.4 | `percona-xtrabackup-24` |
 | 8.0 | 8.0 | `percona-xtrabackup-80` |
-| 8.4 | 8.4 | `percona-xtrabackup-84` |
+| **8.4** | **8.4** | **`percona-xtrabackup-84`（本文使用）** |
 
 注意:
 
-- MySQL 8.0 只能用 XtraBackup 8.0;5.7 只能用 2.4,错配会直接报错
+- MySQL 8.0 只能用 XtraBackup 8.0;5.7 只能用 2.4,错配会直接报错；8.4 要配 percona-xtrabackup-84
 - XtraBackup **不支持 MariaDB**,MariaDB 对应的是 `mariabackup`
 - XtraBackup 8.0 **已移除** `innobackupex` 命令,统一改用 `xtrabackup`;2.4 仍可用 `innobackupex`
 
-### 2. 安装(CentOS 示例)
+### 2. 安装(Rocky 8 / EL8 示例)
 
 ```bash
 # 添加 Percona 官方仓库
 yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
 percona-release enable-only tools release
 
-# MySQL 8.0 环境
-yum install -y percona-xtrabackup-80
+# MySQL 8.4 环境
+dnf install -y percona-xtrabackup-84
 
 # MySQL 5.7 环境
 # yum install -y percona-xtrabackup-24

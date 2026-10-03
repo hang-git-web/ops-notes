@@ -15,10 +15,10 @@
 
 ```bash
 # 下载 MySQL 8 的 Yum 源
-wget http://dev.mysql.com/get/mysql84-community-release-el7-1.noarch.rpm
+wget http://dev.mysql.com/get/mysql84-community-release-el8-1.noarch.rpm
 
 # 安装 Yum 源
-sudo yum localinstall mysql84-community-release-el7-1.noarch.rpm
+sudo yum localinstall mysql84-community-release-el8-1.noarch.rpm
 
 # 安装 MySQL 服务器
 sudo yum install mysql-community-server
@@ -67,7 +67,7 @@ sudo vi /etc/my.cnf.d/mysql2.cnf
 添加以下内容：
 
 ```ini
-[mysqld2]
+[mysqld]
 
 # 第二个实例的端口，避免与第一个实例冲突
 port = 3307
@@ -120,7 +120,7 @@ WantedBy=multi-user.target
 User=mysql
 Group=mysql
 ExecStart=/usr/sbin/mysqld --defaults-file=/etc/my.cnf.d/mysql2.cnf
-LimitNOFILE = 5000
+LimitNOFILE=5000
 Restart=on-failure
 RestartPreventExitStatus=1
 PrivateTmp=false
@@ -179,7 +179,7 @@ systemctl enable mysqld2
 ps aux | grep mysqld | grep -v grep
 
 # 检查端口监听
-netstat -tulnp | grep mysql
+ss -lntp | grep mysql
 ```
 
 ### 3. 配置账号远程访问
@@ -217,6 +217,6 @@ GRANT ALL PRIVILEGES ON *.* TO 'remote_user'@'%';
 
 | 问题 | 解决方案 |
 | --- | --- |
-| 端口冲突 | 检查 `netstat -tulnp` 确认端口未被占用 |
+| 端口冲突 | 检查 `ss -lntp` 确认端口未被占用 |
 | 数据目录权限错误 | `chown -R mysql:mysql /var/lib/mysql2` |
 | 服务启动失败 | 查看日志 `/var/log/mysql2/error.log` |

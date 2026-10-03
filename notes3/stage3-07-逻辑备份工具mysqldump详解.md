@@ -35,7 +35,7 @@
 | `--ignore-table=库.表` | 忽略指定表,可重复使用 |
 | `--where="条件"` | 按条件备份部分数据(对该次备份的所有表生效) |
 | `--default-character-set=utf8mb4` | 指定字符集,避免中文乱码 |
-| `--master-data=2` | 以注释形式记录 binlog 位置,便于按时间点恢复 |
+| `--source-data=2` | 以注释形式记录 binlog 位置,便于按时间点恢复 |
 | `--set-gtid-purged=OFF` | 避免 GTID 相关信息导致导入报错 |
 
 > 常用组合:`--single-transaction --routines --triggers --events --default-character-set=utf8mb4`
@@ -82,7 +82,7 @@ mysqldump -uroot -p --no-create-info mydb > /backup/mydb_data.sql
 mysqldump -uroot -p --single-transaction mydb | gzip > /backup/mydb_full_$(date +%F).sql.gz
 
 # 记录 binlog 位置(便于后续增量恢复)
-mysqldump -uroot -p --single-transaction --master-data=2 mydb > /backup/mydb_full.sql
+mysqldump -uroot -p --single-transaction --source-data=2 mydb > /backup/mydb_full.sql
 ```
 
 ### 3. 恢复

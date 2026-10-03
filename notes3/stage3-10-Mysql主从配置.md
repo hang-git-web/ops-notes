@@ -89,13 +89,13 @@ FLUSH PRIVILEGES;
 SELECT user, host, plugin FROM mysql.user WHERE user = 'repl';
 ```
 
-> 安全建议:把账号限定到从库的具体 IP,不要用 `%`;如果从库是老版本(5.7)连 8.0 主库,账号需用 `IDENTIFIED WITH mysql_native_password`。
+> 安全建议:把账号限定到从库的具体 IP,不要用 `%`;如果从库是老版本(5.7)连 8.0 主库,账号的认证插件要按 8.4 处理（mysql_native_password 默认不加载，需先启用插件或改用 caching_sha2_password）。
 
 ### 3. 查看主库状态
 
 ```sql
 -- MySQL 8.4 之前
-SHOW MASTER STATUS;
+SHOW BINARY LOG STATUS;
 
 -- MySQL 8.4 及之后
 SHOW BINARY LOG STATUS;
@@ -118,12 +118,12 @@ SHOW BINARY LOG STATUS;
 如果主库已有业务数据,必须先做一次全量导出,并记录对应的 binlog 位置:
 
 ```bash
-mysqldump -uroot -p --single-transaction --master-data=2 \
+mysqldump -uroot -p --single-transaction --source-data=2 \
   --routines --triggers --events --all-databases \
   > /backup/full_$(date +%F).sql
 ```
 
-再把这个文件导入从库,然后用文件中的 `CHANGE MASTER TO ... MASTER_LOG_FILE/POS` 注释里的位置配置从库。空库可以直接用 `SHOW MASTER STATUS` 的位置。
+再把这个文件导入从库,然后用文件中的 `CHANGE REPLICATION SOURCE TO ... SOURCE_LOG_FILE/SOURCE_LOG_POS` 注释里的位置配置从库。空库可以直接用 `SHOW BINARY LOG STATUS` 的位置。
 
 ## 六、从库配置
 
@@ -158,13 +158,13 @@ CHANGE REPLICATION SOURCE TO
   SOURCE_PORT        = 3306,
   SOURCE_LOG_FILE    = 'mysql-bin.000001',
   SOURCE_LOG_POS     = 747,
-  GET_SOURCE_PUBLIC_KEY = 1,      -- 8.0 默认 caching_sha2_password 时需要
-  SOURCE_SSL         = 0;
+  GET_SOURCE_PUBLIC_KEY = 1,      -- 8.4 默认 caching_sha2_password，密码认证必须带这一项
+  SOURCE_SSL_MODE    = DISABLED;
 
 START REPLICA;
 ```
 
-**MySQL 8.0.23 之前(旧语法)**
+**MySQL 8.0.23 之前(旧语法，8.4 已移除，仅供对照)**
 
 ```sql
 CHANGE MASTER TO
@@ -172,9 +172,9 @@ CHANGE MASTER TO
   MASTER_USER        = 'repl',
   MASTER_PASSWORD    = 'Repl@2025',
   MASTER_LOG_FILE    = 'mysql-bin.000001',
-  MASTER_LOG_POS     = 747;
+  MASTER_LOG_POS     = 747;   --【8.4 已移除旧语法】请改用上面的 CHANGE REPLICATION SOURCE TO
 
-START SLAVE;
+START REPLICA;
 ```
 
 **GTID 模式(推荐,免去手工算位置)**
@@ -252,8 +252,8 @@ STOP REPLICA;
 RESET REPLICA ALL;
 
 -- 旧语法(8.0 之前)
-STOP SLAVE;
-RESET SLAVE ALL;
+STOP REPLICA;
+RESET REPLICA ALL;
 ```
 
 主从切换(从库提升为主库)的大致操作:
@@ -272,7 +272,7 @@ SET GLOBAL super_read_only = OFF;
 | 问题 | 原因 | 解决 |
 | --- | --- | --- |
 | 连接失败(2003) | 网络不通、防火墙未放行、账号权限不足 | 检查 3306、云安全组、账号是否限定 IP |
-| 认证失败 | 密码错误或认证插件不兼容 | `GET_SOURCE_PUBLIC_KEY=1`,或改用 `mysql_native_password` |
+| 认证失败 | 密码错误或认证插件不兼容 | `GET_SOURCE_PUBLIC_KEY=1`,8.4 首选 GET_SOURCE_PUBLIC_KEY=1（mysql_native_password 需先启用插件） |
 | `Last_IO_Error: 1236` | 指定的 binlog 文件不存在(已被清理) | 重新全量导出并重新配置位置 |
 | 主键冲突(1062) | 从库被写入过数据或数据不一致 | 检查 `read_only`,校验数据后重建从库 |
 | 同步延迟过高 | 大事务、慢查询、单线程重放、从库资源不足 | 开启多线程复制、拆分大事务、优化慢查询、提升硬件 |

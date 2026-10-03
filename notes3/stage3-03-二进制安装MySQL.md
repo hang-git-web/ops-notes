@@ -7,7 +7,7 @@ yum remove mysql-server
 sudo apt update  
 sudo apt install libaio1 libnuma-dev -y
 # CentOS/RHEL
-sudo yum install libaio numactl-libs -y  
+sudo dnf install libaio numactl-libs -y  
 作用说明‌：
 libaio：支持异步 I/O 操作，MySQL 运行必需。
 numactl：优化多核 CPU 内存分配（非必需，但建议安装）
@@ -24,22 +24,22 @@ sudo useradd -r -g mysql -s /bin/false mysql
 1.下载二进制包
 进入临时目录  
 cd /tmp
-下载（以 5.7.42 为例，可从官网替换最新版本链接）  
-wget https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.42-linux-glibc2.12-x86_64.tar.gz
+下载（以 8.4.6 为例，可从官网替换最新版本链接）  
+wget https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.6-linux-glibc2.28-x86_64.tar.xz
 下载完成之后,验证文件的完整性,不然有可能会存在病毒等内容，存在一定的风险
 # 验证文件完整性（可选）
-md5sum mysql-5.7.42-linux-glibc2.12-x86_64.tar.gz
-# 对比官网提供的 MD5 值：https://dev.mysql.com/downloads/mysql/5.7.html
+sha256sum mysql-8.4.6-linux-glibc2.28-x86_64.tar.xz
+# 对比官网提供的 SHA256 值：https://dev.mysql.com/downloads/mysql/8.4.html
 
 2.解压并移动到安装目录
 解压  
-tar -zxvf mysql-5.7.42-linux-glibc2.12-x86_64.tar.gz
+tar -xvf mysql-8.4.6-linux-glibc2.28-x86_64.tar.xz
 # 创建安装目录（通常为 /usr/local/mysql）
 sudo mkdir -p /usr/local/mysql
 # 移动文件
-sudo mv mysql-5.7.42-linux-glibc2.12-x86_64/* /usr/local/mysql
+sudo mv mysql-8.4.6-linux-glibc2.28-x86_64/* /usr/local/mysql
 # 清理临时文件
-rm -rf mysql-5.7.42-linux-glibc2.12-x86_64*
+rm -rf mysql-8.4.6-linux-glibc2.28-x86_64*
 
 四. 初始化MySQL数据库
 1. 配置环境变量‌
@@ -74,8 +74,8 @@ source /etc/profile
    pid-file = /data/mysql/mysql.pid
 # 安全配置
 skip-name-resolve = 1  
-symbolic-links = 0  
-explicit_defaults_for_timestamp = 1
+# symbolic-links 已在 8.4 移除，不要写这一行  
+# explicit_defaults_for_timestamp 已在 8.4 移除，不要写这一行
 # 内存优化（根据服务器配置调整）
 key_buffer_size = 256M  
 max_allowed_packet = 64M  

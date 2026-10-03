@@ -68,7 +68,7 @@ mysqldump -uroot -p --no-create-info mydb > /backup/mydb_data.sql
 | `--skip-lock-tables` | 跳过锁表;混用 MyISAM 表时可能不一致,慎用 |
 | `--routines --triggers --events` | 一并备份存储过程、触发器、事件 |
 | `--default-character-set=utf8mb4` | 避免中文乱码 |
-| `--master-data=2` | 记录 binlog 位置(注释形式),便于按时间点恢复 |
+| `--source-data=2` | 记录 binlog 位置(注释形式),便于按时间点恢复 |
 | `--where="条件"` | 只备份满足条件的数据(部分备份) |
 | `--ignore-table=库.表` | 排除指定表 |
 | `--set-gtid-purged=OFF` | 避免导入时因 GTID 语句报错 |
@@ -163,7 +163,7 @@ server-id = 1
 log-bin = mysql-bin
 binlog_format = ROW
 # 日志保留时间(8.0 用 binlog_expire_logs_seconds)
-expire_logs_days = 7
+binlog_expire_logs_seconds = 604800
 ```
 
 ```bash
@@ -174,7 +174,7 @@ systemctl restart mysqld
 
 ```bash
 # 查看当前正在使用的日志文件与位置
-mysql -u root -p -e "SHOW MASTER STATUS;"
+mysql -u root -p -e "SHOW BINARY LOG STATUS;"
 
 # 手动生成新日志(便于归档当前日志)
 mysql -u root -p -e "FLUSH BINARY LOGS;"

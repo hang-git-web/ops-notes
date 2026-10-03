@@ -118,6 +118,8 @@ Google 基于内部 Borg 系统，于 2014 年 6 月开源；2014—2017 快速�
 | **Worker / Node** | 除 Master 外的节点，承担实际工作负载 | **干活的手** |
 
 > **重点**：`Pod` 是 K8s 中的**最小调度单元**，它**不等于容器**——一个 Pod 里可以包含多个容器（它们共享网络和存储卷，可以用 localhost 互相访问）。
+![](../images2/10.png)
+![](../images2/11.png)
 
 ### 1.7 版本策略（选版本时要懂）
 
@@ -501,7 +503,7 @@ kubeadm join 172.22.4.203:6443 --token 17xih5.t7tbw21usy1gb93w \
 # 在 master 上查看集群节点情况
 kubectl get nodes
 ```
-
+![](../images2/12.png)
 **此刻 `NotReady` 是正常的**——因为**网络组件还没装**，节点还没准备好接活。
 
 ---
@@ -551,6 +553,7 @@ kubectl get pods -A
 kubectl get pods -A -w                  # 持续观察状态变化
 kubectl describe pod -n kube-system <pod名>   # 看 Events 里在做什么
 ```
+![](../images2/14.png)
 
 | Events 里看到 | 含义 | 处理 |
 | --- | --- | --- |
@@ -559,7 +562,7 @@ kubectl describe pod -n kube-system <pod名>   # 看 Events 里在做什么
 | `ImagePullBackOff` | 拉不到镜像 | 检查网络、镜像地址、加速器 |
 | `FailedScheduling` | 调度不了 | 看节点资源、污点 |
 
-**结论**：讲义里等一会儿全部变成 `Running`，就是典型的**镜像拉取慢**，不是网络故障。
+**结论**：等一会儿全部变成 `Running`，就是典型的**镜像拉取慢**，不是网络故障。
 
 ---
 
@@ -838,7 +841,9 @@ kubectl describe secrets -n kube-system \
 > **原文勘误**：`awk '/dashboard‑admin/...'` 里的连字符是从文档复制的特殊字符（非普通 `-`），直接粘贴会匹配不到。必须手敲普通的减号。
 
 把输出的 `token:` 后面那一长串复制到 Dashboard 登录页即可。
-
+![](../images2/16.png)
+登录进去后如图
+![](../images2/17.png)
 **这三步在做什么**：
 
 | 步骤 | 作用 |

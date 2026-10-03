@@ -39,13 +39,13 @@
 ### 1. 启用 MySQL 官方仓库
 
 ```bash
-yum -y install https://repo.mysql.com/mysql80-community-release-el7-3.noarch.rpm
+yum -y install https://repo.mysql.com/mysql84-community-release-el8-1.noarch.rpm
 ```
 
 ### 2. 切换到 MySQL 5.7(可选,默认安装 8.0)
 
 ```bash
-yum install -y yum-utils-1.1.31-54.el7_8.noarch
+dnf install -y yum-utils
 
 # 禁用 8.0 仓库
 yum-config-manager --disable mysql80-community
