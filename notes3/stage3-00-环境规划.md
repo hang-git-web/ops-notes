@@ -54,6 +54,21 @@
 | **node2** | 192.168.171.148 | 2 核 / 4G / 40G | **MySQL 主库**（10）+ 多实例 3307（09）+ **Redis master**（16/17/18） |
 | **node3** | 192.168.171.146 | 2 核 / 4G / 40G | **MySQL 从库**（10）+ **Redis slave**（16/17/18） |
 
+# ① 改主机名（在 node1 上就写 node1，node2/node3 同理）
+hostnamectl set-hostname node1
+
+# ② 三台都把主机名解析写上
+cat >>/etc/hosts<<'EOF'
+192.168.171.147 node1
+192.168.171.148 node2
+192.168.171.146 node3
+EOF
+
+# ③ 验证
+hostname                                  # 应该输出 node1
+hostnamectl status | head -3              # 看 Static hostname
+ping -c1 node2                            # 能通说明 hosts 生效
+
 ### 关于笔记里 IP 的一处不一致
 
 | 笔记 | 主节点 IP |
@@ -174,14 +189,7 @@ systemctl disable --now firewalld
 getenforce                        # 期望 Permissive
 systemctl is-active firewalld     # 期望 inactive
 
-# 4) hosts 解析（三台都写）
-cat >>/etc/hosts<<'EOF'
-192.168.171.147 node1
-192.168.171.148 node2
-192.168.171.146 node3
-EOF
-ping -c1 node2 && ping -c1 node3  # 验证互通
-```
+
 
 ### 按角色装
 
