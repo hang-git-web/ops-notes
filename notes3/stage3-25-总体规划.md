@@ -143,7 +143,7 @@ which vim netstat lsof ss tar
 **① MySQL 8.4（node2、node3）**：
 
 ```bash
-dnf install -y https://dev.mysql.com/get/mysql84-community-release-el8-1.noarch.rpm
+dnf install -y https://dev.mysql.com/get/mysql84-community-release-el8-1.noarch.rpm   # 下载 MySQL 8.4 的 YUM 源
 dnf install -y mysql-community-server
 systemctl enable --now mysqld
 grep 'temporary password' /var/log/mysqld.log
@@ -154,9 +154,9 @@ mysql -uroot -p'初始密码' -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Y
 **② XtraBackup 8.4（node2）**：
 
 ```bash
-dnf install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
-percona-release enable-only pxb-84-lts      # 找不到包就换 tools release
-dnf makecache
+dnf install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm   #装 Percona 的仓库定义包
+percona-release enable-only pxb-84-lts      # 启用 8.4 版本的 XtraBackup
+dnf makecache   #刷新元数据缓存（改了仓库后要刷新，否则 dnf 还不知道），只是提速，不是必须项
 dnf list available 'percona-xtrabackup*'    # 先看能装到哪个版本
 dnf install -y percona-xtrabackup-84
 xtrabackup --version
@@ -596,3 +596,32 @@ redis-server /usr/local/redis-cluster/7001/redis.conf
 
 全打勾 → 从「实战一 · 备份篇」开始，按第四章的顺序走。
 ```
+
+
+
+复盘：
+问题一：mysql8.4安装失败
+所有的匹配结果均已经被参数的模块化过滤条件筛除: mysql-community-server
+错误：没有任何匹配: mysql-community-server
+
+原因：
+RHEL 8 / Rocky 8 引入了"模块化仓库（modularity）"：
+· 一个模块 = 一组包的集合 + 版本流（stream）
+· 模块可以声明"过滤掉某些包名"，防止和模块内的包冲突
+· AppStream 里的 mysql 模块 8.0 覆盖了 mysql-server 这套包，
+同时把 mysql-community-server 这类第三方包名也"屏蔽"了
+
+所以：官方源里有包，但 dnf 的模块过滤器在中间拦了一道。
+
+★ 这个问题只存在于 RHEL 8 / Rocky 8 / AlmaLinux 8，
+Rocky 9 / RHEL 9 已经移除了模块化，不会有这个报错。
+
+解决方案
+# ① 先看一眼模块状态（可选）
+dnf module list mysql
+
+# ② 关键一步：禁用这个模块
+dnf module disable mysql -y
+
+# ③ 再装
+dnf install -y mysql-community-server

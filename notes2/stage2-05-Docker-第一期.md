@@ -1,13 +1,5 @@
 # Docker 第一期：Docker 简介、安装与镜像基础
 
-> **对应课件**：《Docker零基础到大神进阶-1.8课件》（千山）
-> **本篇定位**：Docker 的"从零开始"。先搞清楚 **Docker 是什么、为什么用它**，再**完整装一遍**（在线安装 + 离线安装 + compose 安装），最后讲清 **镜像和容器到底是怎么回事**。
-> **环境约定**：CentOS 7.9 或 Rocky Linux 8 都行（本篇命令在 CentOS 7.9 + docker 24.0.9、Rocky 8.10 + docker 26.1.3 上都跑过）。建议虚拟机 **2 核 4G** 起，能联网。
-> **三篇的关系**：第一期（概念 + 安装 + 镜像）→ 第二期（命令 + 网络 + 数据卷 + 私有仓库）→ 第三期（Compose + Dockerfile + 监控 + 项目实战）。
-> **配套已有笔记**：`stage2-05-Docker.md`（安装速查）、`stage2-05-Docker实验总结.md`（镜像/容器/持久化理论）。
-
----
-
 ## 〇、实战前的环境准备（每次做实验前先过一遍）
 
 > 课件里没写这一节，但**不做会踩坑**（尤其是 SELinux 和防火墙），所以放在最前面。
@@ -51,7 +43,7 @@ systemctl disable firewalld     # 禁止开机启动
 systemctl status firewalld      # 检验：inactive (dead)
 ```
 
-> **课件原话**：**firewalld 和 docker 会同时管理操作系统的防火墙，容易互相干扰，最好把 firewalld 关掉，关掉之后把 docker 重启一下。**
+> **firewalld 和 docker 会同时管理操作系统的防火墙，容易互相干扰，最好把 firewalld 关掉，关掉之后把 docker 重启一下。**
 >
 > **但要知道生产上的正确做法**（面试会问）：
 > - Docker 启动时会自动往 iptables 的 `nat` 表和 `filter` 表写规则（`DOCKER` 链、`MASQUERADE`、`DNAT`）。**firewalld 重载时会清掉这些规则**，导致已经发布的容器端口突然访问不了。

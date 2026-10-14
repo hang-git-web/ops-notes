@@ -518,14 +518,14 @@ docker inspect -f '{{.NetworkSettings.IPAddress}}' tomcat05
 docker exec tomcat04 ping -c 2 tomcat05
 ```
 
-> **★ 自定义网络 vs 默认 bridge 网络 —— 最重要的一个区别**：
->
-> | | 默认 bridge | 自定义网络（bridge driver） |
-> | --- | --- | --- |
-> | 容器之间能否用**容器名**通信 | **不能**（只能靠 IP，而且 IP 会变） | **能**（内置 DNS 解析） |
-> | 网段 | 固定 172.17.0.0/16 | 自己指定 |
-> | 隔离 | 所有容器混在一起 | 按网络隔离，不同网络不互通 |
->
+**★ 自定义网络 vs 默认 bridge 网络 —— 最重要的一个区别**：
+
+| 对比项 | 默认 bridge | 自定义网络（bridge driver） |
+| --- | --- | --- |
+| 容器之间能否用**容器名**通信 | **不能**（只能靠 IP，而且 IP 会变） | **能**（内置 DNS 解析） |
+| 网段 | 固定 172.17.0.0/16 | 自己指定 |
+| 隔离 | 所有容器混在一起 | 按网络隔离，不同网络不互通 |
+
 > **这一条是第三期 Compose 的基础**：Compose 里 `depends_on` + `networks` 能让 PHP 容器**用服务名直接连 MySQL**（`DB_HOST: mysql`），靠的就是自定义网络的 DNS。
 
 **清理实验环境**：
